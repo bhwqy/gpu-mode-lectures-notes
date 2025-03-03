@@ -33,8 +33,11 @@ Do calibration for activation quantization.
 ## Other Materials
 Papers
 + [A Survey on Model Compression for Large Language Models](https://direct.mit.edu/tacl/article/doi/10.1162/tacl_a_00704/125482)
++ [GPTQ](https://arxiv.org/pdf/2210.17323)
++ [AWQ](https://arxiv.org/pdf/2306.00978)
 + [SmoothQuant](https://arxiv.org/pdf/2211.10438)
 + [KVQuant](https://proceedings.neurips.cc/paper_files/paper/2024/file/028fcbcf85435d39a40c4d61b42c99a4-Paper-Conference.pdf)
++ [LLMQAT](https://arxiv.org/pdf/2305.17888)
 
 Links
 + https://zhuanlan.zhihu.com/p/703928680

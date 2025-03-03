@@ -4,6 +4,11 @@
 
 ## Quantization
 Releated lectures: lecture_007
+Supplement topics: Model Pruning, Knowledge Distillation, Low Rank 
+
+## CUTLASS
+Releated lectures: lecture_015 lecture_036
 
 ## Training
 Releated lectures: lecture_030
+Supplement topics: 
