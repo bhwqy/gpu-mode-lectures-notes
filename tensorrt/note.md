@@ -180,4 +180,71 @@ surgeon模式功能
 + 自己干
 
 ### 实现步骤
++ 继承IPluginV2DynamicExt类
+  + plugin类型
+    + IPluginV2 单一input output
+    + IPluginV2Ext 单一input 混合output
+    + IPluginV2IOExt 混合input 混合output implicit batch
+    + IPluginV2DynamicExt 混合input 混合output dynamic shape
+  + 构造函数 接受plugincreator初始化
+  + getOutputDimensions 报告输出张量 不一定是构建期常量 允许表达式计算 outputIndex只索引张量
+  + supportFormatCombination 支持多种dtype layout 输入输出组合
+    + trt深度优先遍历 pos pos是输入输出张量索引 返回是否支持 dtype layout 当前组合
+    + FP16 模式尝试kHalf 
+    + INT8 模式尝试kINT8 如果需要支持calibration 需要fp32实现 否则手工指定输入输出张量dynamic range 内部张量dynamic range也需要指定
+    + 在确保性能时 实现多种组合来消除format
+  + configurePlugin
+    + 推理前调用
+    + dynamic shape模式 输入数据shape改变调用
+    + 构建期 in out张量形状有 -1 运行期为真实形状
+  + getWorkspaceSize
+    + 报告中间计算的存储空间
+    + 由trt管理参与显存优化
+  + enqueue
+    + 根据输入 shape layout 选择调用CUDA kernel
+    + 不可以使用 cudamalloc 需要在workspace申请
+  + initialize engine创建调用 初始化plugin
+  + terminate engine销毁调用 释放initialize资源
+  + clone 创建多个context 与源对象共享本engine资源
+  + attachToContext 申请使用context独占的cudnn和cublas资源
+  + detachFromContext 释放attachToContext申请的cudnn和cublas资源
+  + destroy context或plugin销毁调用
+  + 序列化 plugin负责
+    + getSerializationSize 报告所需空间大小 byte
+    + serialize 将plugin序列化到给定buffer中
+  + 反序列化 creator负责
+    + deserializePlugin 从buffer中传给plugin构造函数
+    + plugin构造函数 完成读取数据和plugin构造
+  + Version Namespace
+    + trt将plugin name type version Namespace写入engine
+    + 通常不修改
++ 继承IPluginCreator类
+  + create_plugin 构造plugin
+  + 注册plugincreator REGISTER_TENSORRT_PLUGIN(***PluginCreator)
++ 实现CUDA kernel
++ 编译so
++ 加载使用plugin
+  + 构建期
+    + trt向plugin传输参数权重
+    + plugin向trt传输张量数量 shape dtype layout workspace
+    + trt尝试允许组合选择性能最佳的输入输出组合 可能在plugin前后插入reformat节点
+    + plugin不参加节点融合
+  + 运行期
+    + trt向plugin传输输入输出张量地址 workspace地址 stream
+  + 加载so
+  + 从registry中查找plugin
+  + 通过creator创建plugin
+  + 将plugin插入网络或者parser自动识别ONNX中的plugin
 
+### plugin parser的结合使用
+基本步骤
++ netron分析onnx需要替换的模块
++ onnx-surgeon替换新节点
++ 实现plugin
++ trt加载修改后的plugin和onnx
++ 对比加载前后精度和性能
+
+### 优化范例
++ 整合零散算子 memory bound的操作 如多个输入预处理
++ 优化self attention等
++ 使用FastTransformer等高度优化的cuda kernel
