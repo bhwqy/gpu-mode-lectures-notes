@@ -1,6 +1,71 @@
 # TensorRT
 https://github.com/NVIDIA/trt-samples-for-hackathon-cn
 
+## 基本流程
+### 构建
++ 建立logger
++ 建立builder
+  + buidler config
+    + workspace
+    + int8_calibrator
+    + flag 设置FP16、INT8、TF32 refit模式 手工数据类型限制等
+    + add_optimization_profile 添加dynamic shape输入配置器
+  + builder.create_network()
+  + builder.create_optimization_profile()
++ 创建network
+  + 常用参数 1 << int(tensorrt.NetworkDefinitionCreationFlag.EXPLICIT_BATCH) 使用explicit batch
+  + 常用方法 add_input add_convolution_nd 添加网络层 mark_output
+  + 成员变量 network.name network.num_layers network.num_inputs network.num_outputs
+  + network.has_implicit_batch_dimension() network.has_explicit_precision()
+  + Explicit batch比implicit batch多一维 ONNX导入默认前者 推荐前者 额外支持
+    + batch norm 
+    + reshape transpose reduce over batch
+    + dynamic shape
+    + loop结构
+    + layer高级用法 如 shuffle_layer.set_input
+  + Dynamic shape需要explicit batch
+    +  需要optimization profile帮助网络优化 builder.create_optimization_profile() profile.set_shape() config.set_optimization_profile
+    +  需要context.set_input_shape绑定实际输入shape
+  + layer成员 name type precision get_input(i) get_output(i) network.get_layer()
+  + tensor成员 name shape dtype
+  + 一般FP32相对误差1e-6 FP16相对误差1e-3
+  + FP16模式
+    + config.flags = 1 << int(tensorrt.BuilderFlag.FP16)
+    + 比FP32建立时间更长 需要选择kernel和插入reformat节点 (timeline中会有reformat节点 如nchwToNchw)
+    + 部分层误差较大 需要polygraphy 强制该层FP32计算 config.set_flag(trt.BuilderFlag.OBEY_PRECISION_CONSTRAINTs) layer.precision = trt.float32
+  + INT8模式 PTQ
+    + 需要校准集合
+    + 实现calibrator config.set_flag(trt.BuilderFlag.INT8) config.int8_calibrator = calibrator
+  + INT8模式 QAT
+    + config.set_flag(trt.BuilderFlag.INT8)
+    + 在pytorch中插入 quantize 和 dequantize 节点
++ 生成serialized network
+  + serialized_network = builder.build_serialized_network()
+  + 需要环境完全一致
+  + engine不同生成不保证一样 可以algorithm selector和timing cache多次生成一样的engine
+  
+### 运行阶段
++ 建立engine
+  + engine = trt.Runtime(logger).deserialize_cuda_engine(serialized_network)
+  + engine.get_tensor_name(i) for i in range(engine.num_io_tensors)
+  + engine.num_layers
+  + engine.get_tensor_name(i)
+  + engine.get_tensor_dtype(name\[i\])
+  + engine.get_tensor_shape(name\[i\])
+  + engine.get_tensor_mode(name\[i\]) 输入输出
++ 创建context
+  + engine.create_execution_context()
+  + 绑定动态输入 context.set_input_shape(name, shape)
+  + context.execute_async_v3(stream)
++ buffer准备与拷贝
++ 推理
++ buffer拷贝
++ 善后工作
+
+### ONNX 
++ pytorch .pt -> ONNX -> ONNX simplifier -> TensorRT
++ 需要parser 不支持节点需要修改模型或者ONNX 实现plugin 或者修改TensorRT
+
 ## Tools
 ### trtexec
 功能
@@ -98,3 +163,21 @@ surgeon模式功能
 + launch bound需要cuda graph解决（CPU调用和GPU执行等待时间过长）
 
 ## Plugin
+功能
++ 以so形式插入网络实现算子
++ 实现trt不原生支持的结构
++ 提高算子性能
++ 手动合并不能自动融合的层
+
+限制条件
++ 需要写CUDA kernel，保证精度和性能
++ 无法和其他layer fusing
++ 可能需要reformat节点增加开销
+
+建议
++ 优先尝试原生layer组合
++ 尝试自带plugin
++ 自己干
+
+### 实现步骤
+
