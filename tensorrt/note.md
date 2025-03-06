@@ -148,7 +148,7 @@ surgeon模式功能
   
 ### nsight systems
 + 命令行 nsys profile XXX 获得.qdrep和.qdrep-nsys文件
-+ 打开nsys-ui 将文件拖入观察timeline
++ 打开 nsys-ui 将文件拖入观察timeline
 
 建议
 + 只计量运行阶段
@@ -161,6 +161,10 @@ surgeon模式功能
 + GPU timeline从CUDA HW行展开
 + 从all stream和TensorRT show in event
 + launch bound需要cuda graph解决（CPU调用和GPU执行等待时间过长）
+  
+### Nsight Compute
+### NVTX
+### Trex
 
 ## Plugin
 功能
@@ -248,3 +252,67 @@ surgeon模式功能
 + 整合零散算子 memory bound的操作 如多个输入预处理
 + 优化self attention等
 + 使用FastTransformer等高度优化的cuda kernel
+
+## 其他
+### Dynamic Shape在不同shape性能下降
++ 创建多个OptimizationProfile
+  + 创建期添加多个profile
+  + 运行期指定OptimizationProfile
+  + 要点是缩小profile范围 推理时选择特定profile 注意绑定位置不同
+  + 负面效果 增加显存、引擎、plan文件尺寸
+  + 多context基础
+
+### 重叠计算和拷贝
++ 恰当使用stream和event
++ 使用pin memory 避免异步发生内存换页
++ 使用async函数 context.execute_async_v2
+
+### 多context
++ 一个engine给多context使用 engine.create_execution_context() for i in range(10) 可以多线程使用
++ 8.6不需要多个OptimizationProfile
+
+### CUDA graph
++ 场景 CPU GPU交互频繁
++ 降低 CPU launch cost
++ CUDA 工作流优化
++ 缓解kernel调用 launch bound
++ 步骤 graph定义 实例化 执行
++ dyanamic shape 实际shape变化要先跑一遍 context.execute 再重新捕获graph 再实例化执行
+
+### timing cache
++ 优化构建时间 模型内同参数算子不变
++ 可以生成一致的引擎
++ 需要序列化 不可跨平台
+
+### Algorithm selector
++ 实现成员函数 挑选特定层 报告所有层的挑选结果
++ 构建网络通过builder config配置
++ polygraphy检查精度不够 构造selector 重新构造引擎
+
+### Refit
++ 更新权重信息 不重新更新引擎
++ builder config设置flag
++ 在engine更新权重
++ 更新某层权重 邻近层也可能需要更新
++ 注意权重layout
++ dynamic shape不支持
+
+### tactic source
++ 节约显存配置
++ builder config设置flag 可以开启关闭cublas cublaslt cudnn
++ 可能会有性能下降
+
+### hardware compatibility version compatibility
++ 版本兼容>=8.6 config.set_flag runtime.engine_host_code_allowed
++ 硬件兼容 >= sm_80 config.hardware_compatibility_level
++ 会有性能损失
+
+## 性能优化技巧
++ 计算图优化 + plugin是主要手段 nsight是工具
++ 尽可能使用Tensor Core
++ 尽可能融合所有非GEMM kernel，优化后timeline占比90%以上
+
+### 实例
++ transpose + relu + transpose 冗余节点
++ conv + bn + relu 可以融合
+
