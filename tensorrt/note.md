@@ -95,7 +95,9 @@ https://github.com/NVIDIA/trt-samples-for-hackathon-cn
 + --noDataTransfers
 + --streams=2
 + --verbose
-+ --dumpProfile --exportProfile=profile.txt
++ --dumpProfile --exportProfile=profile.txt --seperateProfileRun
+其他
++ --nvtxMode=verbose
 重要指标
 + 吞吐量
 + 延迟统计及解释
@@ -161,10 +163,34 @@ surgeon模式功能
 + GPU timeline从CUDA HW行展开
 + 从all stream和TensorRT show in event
 + launch bound需要cuda graph解决（CPU调用和GPU执行等待时间过长）
-  
+
+解读TensorRT的timeline
++ TensorRT自带NVTX，但是优化后的模型和原模型不一定一一对应，可以根据layer name匹配，融合后的layer在NVTX中显示layer 1 + layer 2 + ... reformat layer 显示 unnamed layer
++ trt 对 pointwise 算子自动生成 generateNativePointwise kernel
++ Myelin作为DL Compiler，layer和kernel命名规则 myelin fused kernel命名规则 \_\_myl\_xxx res表示reshape tra表示transpose cas表示cast mea表示reduce_mean 寻找关键节点 如 layernorm 和 MHA block 的 softmax  softmax 对应的 Myelin 节点名为 ResNegExpResAddDivMul
+
+性能优化技巧
++ 增加batch size可以提高GPU吞吐，如果增大batch size 吞吐线性增加说明GPU资源已打满
++ 单个 context 多 steram 并行 builderconfig配置
++ 多个 context 多 stream 并行
++ 不能使用 default stream 避免引入额外 implicit sync
++ 当切换 context 或 graph shape 改变可能有额外开销 建议多个context隐藏开销或者尝试禁止 kEDGE_MASK_CONVOLUTIONS tactic source
++ LayerNorm Plugin 和 Cutlass Flash attention xformer 将 kernel 封装成 TRT plugin 可以减小 memory bound 和 kernel 调用
++ 尽量保证 reduce 维度最后一维 否则建议使用 shuffle layer 或者 transpose 调整
++ shuffle layer 如果有相同 memory layout 不会有实际 kernel
++ matmul 如果使用 FP16 但K（MNK）不是8的倍数 trt可能会reformat 可以通过手动 padding 来规避 input 如果是4维 reshape到2维和3维性能可能更好
++ Tensor Core使用
+  + TF32 FP16 INT8 FP8
+  + TRT matrix multiply fully connected conv deconv等计算密集使用tensor core
+  + tensor core 对 data alignment 要求 TF32 4byte FP16 8byte (dense) 16byte (sparse) int8 32byte 不满足时会隐式 padding
+  + nsys --gpu-metrics-device all 查看 tensor core 使用情况
++ 量化 TensorRT-Model-Optimizer
++ Sparsity 结构化稀疏 trtexec --sparsity=enable/force
+
 ### Nsight Compute
 ### NVTX
 ### Trex
+TensorRT github tools/experimental/trt-engine-explorer
 
 ## Plugin
 功能
@@ -278,6 +304,7 @@ surgeon模式功能
 + 缓解kernel调用 launch bound
 + 步骤 graph定义 实例化 执行
 + dyanamic shape 实际shape变化要先跑一遍 context.execute 再重新捕获graph 再实例化执行
++ nsys --cuda-graph-trace=node 查看 kernel
 
 ### timing cache
 + 优化构建时间 模型内同参数算子不变
