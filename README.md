@@ -1,7 +1,4 @@
-# gpu-mode-lectures-notes
-* Origin github: https://github.com/gpu-mode/lectures
-* Origin youtube: https://www.youtube.com/@GPUMODE
-
+# gpu-notes
 ## Quantization
 Releated lectures: lecture_007
 Supplement topics: Model Pruning, Knowledge Distillation, Low Rank 
@@ -40,5 +37,7 @@ Supplement topics:
   + https://zhuanlan.zhihu.com/p/688551989
 
 ## Blogs
++ Origin github: https://github.com/gpu-mode/lectures
++ Origin youtube: https://www.youtube.com/@GPUMODE
 + https://github.com/DefTruth/Awesome-LLM-Inference
 + https://github.com/DefTruth/CUDA-Learn-Notes
