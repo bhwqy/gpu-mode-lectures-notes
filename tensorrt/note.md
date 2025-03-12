@@ -343,3 +343,9 @@ TensorRT github tools/experimental/trt-engine-explorer
 + transpose + relu + transpose 冗余节点
 + conv + bn + relu 可以融合
 
+## TensorRT-LLM
+### 链接\
+https://www.bilibili.com/video/BV1Xu4m1g74A/?spm_id_from=333.1387.search.video_card.click&vd_source=0dbf2127104db17df5c266d1153eab03
+
+fast transformer
+ 
