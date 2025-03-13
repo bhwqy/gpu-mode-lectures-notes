@@ -1,4 +1,10 @@
 .ipynb_checkpoints/
 data/
 __pycache__/
+*.sass
+*.ptx
+*.ncu-rep
+*.nsys-rep
+*.nsys-out
+build/
 
