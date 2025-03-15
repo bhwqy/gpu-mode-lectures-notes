@@ -6,13 +6,14 @@ def execute_nvidia_command(filename, need_nsys):
     basename = os.path.splitext(filename)[0]
     warning_code = "-Xcompiler -Wall -Werror all-warnings -Xcompiler"
     arch_code = "-gencode arch=compute_75,code=sm_75"
-    cmd = f"nvcc {warning_code} -g -G -std=c++20 -O3 {arch_code} -o {basename} {filename}"
+    optim_code = "-O3"
+    cmd = f"nvcc {warning_code} -g -G -std=c++20 {optim_code} {arch_code} -o {basename} {filename}"
     if os.system(cmd):
         print(f'[Error] {cmd}')
         return
     else:
         print(f'[Success] {cmd}')
-    cmd = f"nvcc {warning_code} -g -G -std=c++20 -O3 {arch_code} -ptx -o {basename}.ptx {filename}"
+    cmd = f"nvcc {warning_code} -g -G -std=c++20 {optim_code} {arch_code} -ptx -o {basename}.ptx {filename}"
     if os.system(cmd):
         print(f'[Error] {cmd}')
         return

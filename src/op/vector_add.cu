@@ -46,6 +46,13 @@ int main() {
     for (int i = 0; i < N; i++) {
         if (z[i] != i * 2) {
             printf("Error: %f != %f\n", z[i], i * 2.0f);
+            delete[] x;
+            delete[] y;
+            delete[] z;
+
+            cudaFree(d_x);
+            cudaFree(d_y);
+            cudaFree(d_z);
             return 1;
         }
     }
@@ -57,9 +64,24 @@ int main() {
     for (int i = 0; i < N; i++) {
         if (z[i] != i * 2) {
             printf("Error: %f != %f\n", z[i], i * 2.0f);
+            delete[] x;
+            delete[] y;
+            delete[] z;
+
+            cudaFree(d_x);
+            cudaFree(d_y);
+            cudaFree(d_z);
             return 2;
         }
     }
+
+    delete[] x;
+    delete[] y;
+    delete[] z;
+
+    cudaFree(d_x);
+    cudaFree(d_y);
+    cudaFree(d_z);
 
     return 0;
 }
