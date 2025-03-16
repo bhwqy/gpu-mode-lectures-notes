@@ -3,6 +3,7 @@ data/
 __pycache__/
 *.sass
 *.ptx
+*.o
 *.ncu-rep
 *.nsys-rep
 *.nsys-out
