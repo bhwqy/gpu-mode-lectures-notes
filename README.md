@@ -41,6 +41,7 @@ Supplement topics:
 + Origin youtube: https://www.youtube.com/@GPUMODE
 + https://github.com/DefTruth/Awesome-LLM-Inference
 + https://github.com/DefTruth/CUDA-Learn-Notes
++ https://github.com/BBuf/how-to-optim-algorithm-in-cuda
 + https://zhuanlan.zhihu.com/p/30427909948
 + https://zhuanlan.zhihu.com/p/30076930810
 + https://zhuanlan.zhihu.com/p/30058413999
